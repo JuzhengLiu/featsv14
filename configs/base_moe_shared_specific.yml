@@ -1,0 +1,87 @@
+# model
+model: 
+  name: AutoEnc_MoE
+  out_dim: 1280
+  vec_dim: 2560           
+  num_steps: 1
+  norm: true
+  normvec: true
+  identify: false
+  query_num: 700
+  
+  # === MoE Config (Gated-ViT) ===
+  num_experts: 4          
+  top_k: 2                
+  noisy_gating: true      
+  dropout: 0.1            
+  
+  # Transformer Specifics (Best Practice from Experiment)
+  num_chunks: 20          # 2560 / 20 = 128 dim per chunk (Optimal)
+  nhead: 4                # 128 / 4 = 32 dim per head
+ 
+ 
+  residul: false          
+
+# data reader
+workers: 4
+
+# training
+train:
+  dataset: U1652_Random_drone
+  data_path: /root/autodl-tmp/0-pipei-dinov3/
+  dro_num: 1
+  feat: feats/dinov3_vith16plus/28
+  loss: 
+    - CycleAELoss
+  loss_w:
+    - 1
+  
+  lambda_A: 1.
+  lambda_B: 1.
+  idt_w: 1.0             
+  feat_w: 0.001
+  
+  lambda_moe: 0.01       # 辅助损失权重
+
+  # === GLSD (Soft Distillation) ===
+  distill_w: 1.05 
+        
+  
+  # === Sinkhorn Config ===
+  sinkhorn_eps_start: 0.2  
+  sinkhorn_eps_end: 0.05   
+  sinkhorn_iters: 3        
+  
+  label_smoothing: 0.15
+  epochs: 300            
+  save_epoch: 300
+  eval_epoch: 30
+  batch_size: 701
+  
+  # === 训练参数 ===
+  lr: 0.0002             
+ 
+  warm_epochs: 1
+  optim: CAdamW
+  scheduler: cosine
+  custom_sampling: false
+  decay_exclue_bias: false
+  clip_grad: 100.
+  mixed_precision: false
+  remove_junk: false
+  
+  pseudo_thr: 0.2        
+  
+  split: 1
+  mutual_match: True
+  keep_neg: True
+
+eval:
+  dataset: Feat_Single
+  data_path: ""
+  feat: feats_test/dinov3_vith16plus/28
+  batch_size: 256
+  output: feat
+  pos_eval: false
+  refine: false
+  remove_junk: true

@@ -1,0 +1,68 @@
+# ==========================
+# DINOv3 提取与评估配置（不替换原配置，新增独立文件）
+# 与 EM-CVGL 的数据与 transform 完全兼容，用于 dinov3_feat.extract_and_save 脚本
+# ==========================
+
+# 模型（仅用于提取，不参与训练）
+model:
+  name: AnyLoc                # 保持与原工程兼容的占位名
+  dino_model: dinov3_vith16plus #vits16plus     #vitl16   #vit7b16   # 选择 DINOv3 模型，例如：dinov3_vits16 / dinov3_vits16plus / dinov3_vitb16 / dinov3_vitl16
+                                                    # dinov3_vitl16plus / dinov3_vith16plus / dinov3_vit7b16
+
+  # 中间层与特征面选择（新增项，供脚本自动读取）
+  # ViT 层数参考：vits16/vitb16=12 层(最后一层为 11)，vitl16/vitl16plus=24 层(最后一层为 23)，vith16plus=32 层(最后一层为 31)
+  desc_layer: 28              # 指定中间层编号；默认最后一层，这里 vits16 的最后一层是 11
+  desc_facet: token           # 可选：token | query | key | value
+  use_cls: false              # 当 facet≠token 时是否包含 CLS token
+
+  # 最后一层全局聚合方式（与 AnyLoc 思路一致）
+  aggre_type: GeM             # 可选：Avg | Max | GeM | VLAD；若使用 VLAD，请指定 num_c 与 vlad_cache_dir
+  num_c: 8                    # VLAD 聚类中心个数
+  vlad_cache_dir:             # 可选：VLAD 缓存目录（需包含 c_centers.pt）；为空则不使用缓存
+  save_dir: data/jzl/0-pipei-dinov3/feats  # 特征保存目录（相对 HOME），请按你的环境修改
+
+# 数据读取线程数
+workers: 4
+
+# 训练部分（本文件仅用于提取与评估，此段保持结构但不使用）
+train:
+  dataset: None
+  data_path: data/jzl/pipei/EM-CVGL-main/data/University-Release/train   # 数据根目录（相对 HOME），请按你的环境修改
+  transform:
+    - ColorJitter
+    - Resize256
+    - Pad10
+    - RandomAffine90
+    - RandomCrop256
+    - RandomHorizontalFlip
+    - ToTensor
+    - normalize
+  loss:
+    - InfoNCE
+  loss_w:
+    - 1
+  label_smoothing: 0.1
+  epochs: 200
+  save_epoch: 20
+  eval_epoch: 20
+  batch_size: 128
+  lr_proj: 0.01
+  lr_gnn: 0.001
+  lr_decay: 0.1
+  lr_step_size: 80
+  warm_epoch: 0
+  optim: Adam
+
+# 评估/提取所需数据与变换（与 EM-CVGL 保持一致）
+eval:
+  dataset: U1652_Image_D2S
+  data_path: autodl-tmp/University-Release/train   # 数据根目录（相对 HOME），请按你的环境修改
+  batch_size: 64
+  output: feat    # 兼容 test.py，虽然本脚本统一输出聚合后的向量
+  pos_eval: false
+  refine: false
+  transform:
+    - Resize256
+#    - CenterCrop252
+    - ToTensor
+    - normalize

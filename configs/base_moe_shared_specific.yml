@@ -28,7 +28,7 @@ workers: 4
 # training
 train:
   dataset: U1652_Random_drone
-  data_path: /root/autodl-tmp/0-pipei-dinov3/
+  data_path: data/jzl/0-pipei-dinov3
   dro_num: 1
   feat: feats/dinov3_vith16plus/28
   loss: 
